@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LRC — Hospital Codes Revision</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --red:#d4202c;          /* hospital names / Red Cross */
+    --red-dark:#9d141d;
+    --blue:#1456c4;         /* call signs / codes */
+    --blue-soft:#e8f0fd;
+    --ink:#1c1a18;
+    --muted:#8b857d;
+    --line:#e7e1d8;
+    --paper:#faf7f2;
+    --card:#ffffff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'IBM Plex Sans',sans-serif;
+    background:
+      radial-gradient(circle at 12% -5%, #fff 0%, transparent 40%),
+      var(--paper);
+    color:var(--ink);
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:60px;
+  }
+
+  /* ---------- Toolbar ---------- */
+  .bar{
+    position:sticky;top:0;z-index:50;
+    background:rgba(250,247,242,.92);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+    display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+    padding:10px 16px;
+  }
+  .bar .brand{font-family:'Archivo';font-weight:800;font-size:14px;letter-spacing:.5px;color:var(--red);text-transform:uppercase;margin-right:auto}
+  .bar .brand span{color:var(--ink)}
+  .btn{
+    font-family:'IBM Plex Sans';font-weight:600;font-size:13px;
+    border:1.5px solid var(--ink);background:#fff;color:var(--ink);
+    padding:6px 13px;border-radius:999px;cursor:pointer;transition:.15s;
+  }
+  .btn:hover{background:var(--ink);color:#fff}
+  .btn.on{background:var(--red);border-color:var(--red);color:#fff}
+  @media print{.bar{display:none}}
+
+  /* ---------- Header ---------- */
+  header.head{
+    max-width:960px;margin:34px auto 12px;padding:0 22px;
+  }
+  .kicker{font-family:'IBM Plex Mono';font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--red);font-weight:600}
+  h1{font-family:'Archivo';font-weight:900;font-size:clamp(30px,7vw,52px);line-height:.96;letter-spacing:-1.5px;margin:6px 0 10px}
+  .sub{color:var(--muted);font-size:15px;max-width:640px}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;margin:18px 0 6px;font-size:13px}
+  .legend b{font-weight:600}
+  .lg-cs{color:var(--blue);font-family:'IBM Plex Mono';font-weight:600;background:var(--blue-soft);padding:1px 8px;border-radius:5px}
+  .lg-nm{color:var(--red);font-weight:600}
+  .lg-h{color:var(--muted);font-family:'IBM Plex Mono';border:1px solid var(--line);padding:1px 7px;border-radius:5px;font-size:11px}
+
+  /* ---------- Quick call-sign cheat ---------- */
+  .cheat{max-width:960px;margin:18px auto;padding:18px 22px;border:1.5px solid var(--ink);border-radius:14px;background:var(--card)}
+  .cheat h2{font-family:'Archivo';font-weight:800;font-size:16px;letter-spacing:.3px;display:flex;align-items:center;gap:8px;text-transform:uppercase}
+  .cheat h2 .dot{width:9px;height:9px;border-radius:50%;background:var(--red);display:inline-block}
+  .cheat p{font-size:12.5px;color:var(--muted);margin:3px 0 14px}
+  .cheat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px 16px}
+  .cheat-reg{grid-column:1/-1;font-family:'IBM Plex Mono';font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-top:10px;border-bottom:1px dotted var(--line);padding-bottom:2px}
+  .cheat-row{display:flex;gap:8px;align-items:baseline;font-size:13.5px;padding:1px 0}
+  .cheat-row .cs{font-family:'IBM Plex Mono';font-weight:600;color:var(--blue);min-width:78px}
+  .cheat-row .nm{color:var(--red);font-weight:600}
+
+  /* ---------- Regions ---------- */
+  main{max-width:960px;margin:0 auto;padding:8px 22px}
+  .region{margin-top:40px}
+  .region-head{display:flex;align-items:flex-end;gap:14px;border-bottom:3px solid var(--ink);padding-bottom:8px;margin-bottom:18px}
+  .region-num{font-family:'Archivo';font-weight:900;font-size:46px;line-height:.8;color:var(--red);letter-spacing:-2px}
+  .region-name{font-family:'Archivo';font-weight:800;font-size:24px;letter-spacing:-.5px}
+  .region-tag{font-family:'IBM Plex Mono';font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+
+  /* ---------- Branch cards ---------- */
+  .branches{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+  .branch{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card);box-shadow:0 1px 0 rgba(0,0,0,.02);break-inside:avoid}
+  .branch-head{background:var(--red);color:#fff;display:flex;align-items:center;gap:10px;padding:8px 13px}
+  .branch-code{font-family:'IBM Plex Mono';font-weight:600;font-size:15px;background:rgba(255,255,255,.18);padding:2px 9px;border-radius:6px}
+  .branch-name{font-family:'Archivo';font-weight:700;font-size:16px;letter-spacing:.2px}
+  .branch-body{padding:6px 13px 11px}
+  .hosp{display:grid;grid-template-columns:96px 1fr;gap:8px;align-items:baseline;padding:5px 0;border-bottom:1px dotted var(--line)}
+  .hosp:last-child{border-bottom:none}
+  .sign{font-family:'IBM Plex Mono';font-size:12.5px;font-weight:600}
+  .sign.cs{color:var(--blue);background:var(--blue-soft);padding:1px 7px;border-radius:5px;justify-self:start}
+  .sign.code{color:#4a5a76;justify-self:start}
+  .sign.g{color:var(--muted);border:1px solid var(--line);padding:0 6px;border-radius:5px;font-size:10.5px;justify-self:start}
+  .hname{color:var(--red);font-weight:600;font-size:14px}
+  .hname .note{color:var(--muted);font-weight:400;font-size:11.5px}
+  .empty{color:var(--muted);font-style:italic;font-size:12.5px;padding:4px 0}
+
+  /* ---------- Quiz mode ---------- */
+  body.quiz .hname{
+    background:#efe9e1;color:transparent;border-radius:4px;cursor:pointer;
+    user-select:none;transition:.12s;position:relative;
+  }
+  body.quiz .hname .note{color:transparent}
+  body.quiz .hname.reveal{background:transparent;color:var(--red);cursor:default}
+  body.quiz .hname.reveal .note{color:var(--muted)}
+  body.quiz .cheat .nm{background:#efe9e1;color:transparent;border-radius:4px;cursor:pointer}
+  body.quiz .cheat .nm.reveal{background:transparent;color:var(--red)}
+
+  footer{max-width:960px;margin:46px auto 0;padding:18px 22px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+
+  /* ---------- Branch quiz ---------- */
+  .quizsec{max-width:960px;margin:46px auto 0;padding:0 22px}
+  .quizsec h2{font-family:'Archivo';font-weight:900;font-size:clamp(22px,5vw,30px);letter-spacing:-.5px;display:flex;align-items:center;gap:10px}
+  .quizsec h2 .dot{width:11px;height:11px;border-radius:50%;background:var(--blue);display:inline-block}
+  .quizsec .qsub{color:var(--muted);font-size:14px;margin:4px 0 16px}
+  .qmodes{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+  .qmodes .btn{font-size:12.5px}
+  .qcard{border:1.5px solid var(--ink);border-radius:16px;background:var(--card);padding:22px;box-shadow:0 6px 22px rgba(0,0,0,.05)}
+  .qask{font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;font-family:'IBM Plex Mono';font-weight:600}
+  .qprompt{font-family:'Archivo';font-weight:800;font-size:clamp(34px,9vw,58px);line-height:1.02;letter-spacing:-1px;margin:6px 0 18px}
+  .qprompt .big-num{color:var(--blue)}
+  .qprompt .big-name{color:var(--red)}
+  .qrow{display:flex;gap:10px;flex-wrap:wrap}
+  .qinput{flex:1;min-width:180px;font-family:'IBM Plex Sans';font-size:18px;font-weight:600;padding:12px 16px;border:1.5px solid var(--line);border-radius:11px;outline:none;color:var(--ink);background:var(--paper)}
+  .qinput:focus{border-color:var(--blue)}
+  .qbtn{font-family:'Archivo';font-weight:700;font-size:16px;border:none;border-radius:11px;padding:12px 24px;cursor:pointer;background:var(--ink);color:#fff;transition:.15s}
+  .qbtn:hover{background:var(--blue)}
+  .qbtn.alt{background:#fff;color:var(--ink);border:1.5px solid var(--ink)}
+  .qbtn.alt:hover{background:var(--ink);color:#fff}
+  .qfeed{margin-top:16px;font-size:16px;font-weight:600;min-height:24px;display:flex;align-items:center;gap:8px}
+  .qfeed.ok{color:#1a8a4a}
+  .qfeed.no{color:var(--red)}
+  .qfeed .ans{color:var(--ink);font-weight:700}
+  .qstats{display:flex;gap:22px;margin-top:18px;padding-top:14px;border-top:1px dotted var(--line);font-family:'IBM Plex Mono';font-size:13px}
+  .qstats b{font-family:'Archivo';font-size:22px;display:block;line-height:1}
+  .qstats .s-ok b{color:#1a8a4a}
+  .qstats .s-no b{color:var(--red)}
+  .qstats .s-streak b{color:var(--blue)}
+  @media print{.quizsec{display:none}}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="brand">Lebanese Red Cross · <span>Hospital Codes</span></div>
+  <button class="btn on" id="modeStudy">Study</button>
+  <button class="btn" id="modeQuiz">Quiz</button>
+  <button class="btn" id="revealAll" style="display:none">Reveal all</button>
+  <button class="btn" onclick="window.print()">Print</button>
+</div>
+
+<header class="head">
+  <div class="kicker">First Aid Teams · Operations Room</div>
+  <h1>Hospital Codes<br>Revision Sheet</h1>
+  <p class="sub">Every branch grouped by region, with each hospital's <b style="color:var(--red)">real name</b> and its <b style="color:var(--blue)">code name / call-sign</b>. Switch to <b>Quiz</b> mode to hide the answers and test yourself.</p>
+  <div class="legend">
+    <span><span class="lg-cs">Mike</span> &nbsp;= radio call-sign (memorize these)</span>
+    <span><span class="lg-nm">Makassed</span> &nbsp;= real hospital name</span>
+    <span><span class="lg-h">H</span> &nbsp;= no special call-sign (known by name only)</span>
+  </div>
+</header>
+
+<section class="cheat">
+  <h2><span class="dot"></span>High-yield: the call-signs</h2>
+  <p>These are the distinctive codes you actually have to learn — the rest are simply "H" + the hospital's own name.</p>
+  <div class="cheat-grid" id="cheatGrid"></div>
+</section>
+
+<main id="main"></main>
+
+<section class="quizsec">
+  <h2><span class="dot"></span>Branch quiz</h2>
+  <p class="qsub">Random branch, random direction. Type the answer and press Enter.</p>
+  <div class="qmodes" id="branchQModes">
+    <button class="btn on" data-mode="mixed">Mixed</button>
+    <button class="btn" data-mode="num2name">Number → Name</button>
+    <button class="btn" data-mode="name2num">Name → Number</button>
+  </div>
+  </div>
+  <div class="qcard">
+    <div class="qask" id="qAsk">Branch number</div>
+    <div class="qprompt" id="qPrompt">—</div>
+    <div class="qrow">
+      <input class="qinput" id="qInput" type="text" autocomplete="off" placeholder="Your answer…">
+      <button class="qbtn" id="qCheck">Check</button>
+      <button class="qbtn alt" id="qSkip">Skip</button>
+    </div>
+    <div class="qfeed" id="qFeed"></div>
+    <div class="qstats">
+      <div class="s-ok"><b id="sOk">0</b>correct</div>
+      <div class="s-no"><b id="sNo">0</b>wrong</div>
+      <div class="s-streak"><b id="sStreak">0</b>streak</div>
+    </div>
+  </div>
+</section>
+
+<section class="quizsec" style="margin-top:32px">
+  <h2><span class="dot" style="background:var(--red)"></span>Hospital quiz</h2>
+  <p class="qsub">Hospitals from the <strong>100s, 200s &amp; 600s</strong> only. No repeats until all are used. For hospitals with no call-sign, the answer is simply <strong>H</strong>.</p>
+  <div class="qmodes" id="hqModes">
+    <button class="btn on" data-hmode="mixed">Mixed</button>
+    <button class="btn" data-hmode="n2s">Name → Code</button>
+    <button class="btn" data-hmode="s2n">Code → Name</button>
+  </div>
+  <div class="qcard">
+    <div class="qask" id="hqAsk">—</div>
+    <div class="qprompt" id="hqPrompt">—</div>
+    <div style="font-family:'IBM Plex Mono';font-size:12px;color:var(--muted);margin:-10px 0 14px" id="hqBranch"></div>
+    <div class="qrow">
+      <input class="qinput" id="hqInput" type="text" autocomplete="off" placeholder="Your answer…">
+      <button class="qbtn" id="hqCheck">Check</button>
+      <button class="qbtn alt" id="hqSkip">Skip</button>
+    </div>
+    <div class="qfeed" id="hqFeed"></div>
+    <div class="qstats">
+      <div class="s-ok"><b id="hsOk">0</b>correct</div>
+      <div class="s-no"><b id="hsNo">0</b>wrong</div>
+      <div class="s-streak"><b id="hsStreak">0</b>streak</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Built from the LRC "Centre Section / Operations Room" hospital list. <b>al-Houkoumy = Governmental (public)</b> hospital. Branches with no entry have no hospital listed in the source. Verify any number against the official sheet before operational use.
+</footer>
+
+<script>
+/* sign type: cs = call-sign, code = numbered code (H1 201…), g = generic "H" */
+const data = [
+ {num:"100s", name:"Beirut", tag:"دائرة بيروت", branches:[
+   {code:"101", name:"Spears", h:[
+     {s:"A.U.H",t:"cs",n:"American University"},
+     {s:"Mike",t:"cs",n:"Makassed"},
+     {s:"H",t:"g",n:"Najjar"},
+     {s:"H.100",t:"cs",n:"Beirut"},
+     {s:"Zoulou",t:"cs",n:"Zahraa"},
+     {s:"H",t:"g",n:"Fouad Khoury"},
+     {s:"H 101",t:"code",n:"Beirut University Hospital"},
+     {s:"H",t:"g",n:"Trad"},
+     {s:"CMC",t:"cs",n:"Clemenceau Medical Center"},
+     {s:"H",t:"g",n:"Beirut Eye Specialist"},
+   ]},
+   {code:"102", name:"Tabaris", h:[
+     {s:"HDF",t:"cs",n:"Hôtel-Dieu de France"},
+     {s:"Roum",t:"cs",n:"St. Georges"},
+     {s:"H",t:"g",n:"Rizk"},
+     {s:"Libanais",t:"cs",n:"Geitaoui (Jeitawi)"},
+     {s:"H",t:"g",n:"Rosaire / Haddad"},
+     {s:"Kebek",t:"cs",n:"Karantina (Quarantaine)"},
+   ]},
+   {code:"103", name:"Furn el Chebbak", h:[
+     {s:"Gharious",t:"cs",n:"Mont Liban"},
+     {s:"Jazra",t:"cs",n:"Hayat"},
+     {s:"Nova",t:"cs",n:"Hayek"},
+     {s:"Echo",t:"cs",n:"Militaire (Military)"},
+     {s:"Levant",t:"cs",n:"Mashrek"},
+   ]},
+   {code:"104", name:"Mreijeh", h:[
+     {s:"Sierra",t:"cs",n:"Sahel"},
+     {s:"Peggie",t:"cs",n:"Bahman"},
+     {s:"H",t:"g",n:"Haifa"},
+     {s:"Bebe",t:"cs",n:"Bourj / Khansa"},
+     {s:"Manara",t:"cs",n:"Rassoul Al Aazam"},
+     {s:"H",t:"g",n:"Rassoul Al Aazam",note:"Cardiac Center"},
+     {s:"LMC",t:"cs",n:"Labib Medical Center"},
+   ]},
+ ]},
+
+ {num:"200s", name:"Mount Lebanon — North", tag:"دائرة جبل لبنان الشمالي", branches:[
+   {code:"201", name:"Jounieh", h:[
+     {s:"H1 201",t:"code",n:"Notre Dame de Liban"},
+     {s:"H2 201",t:"code",n:"St. Louis"},
+     {s:"H4 201",t:"code",n:"St. Georges"},
+     {s:"H6 201",t:"code",n:"Kortbawy"},
+     {s:"H",t:"g",n:"Bouar"},
+   ]},
+   {code:"202", name:"Antelias", h:[
+     {s:"Secour",t:"cs",n:"Serhal"},
+     {s:"H3 202",t:"code",n:"Middle East Institute of Health"},
+     {s:"H1 202",t:"code",n:"Saideh"},
+     {s:"H",t:"g",n:"Eye and Ear"},
+   ]},
+   {code:"203", name:"Kornet Chehwan", h:[
+     {s:"Bravo Charlie",t:"cs",n:"Beit Chabab"},
+   ]},
+   {code:"204", name:"Beit Mery", h:[
+     {s:"Baby",t:"cs",n:"Bhannes"},
+     {s:"Delta Bravo",t:"cs",n:"Daher el Bachek"},
+     {s:"BMC",t:"cs",n:"Bellevue Medical Centre"},
+   ]},
+   {code:"205", name:"Jbeil", h:[
+     {s:"H1 205",t:"code",n:"Notre Dame de Secours"},
+     {s:"H3 205",t:"code",n:"Notre Dame Maritime"},
+   ]},
+   {code:"206", name:"Jal el Dib", h:[
+     {s:"H1 206",t:"code",n:"Abou Jawde"},
+     {s:"H2 206",t:"code",n:"Arz"},
+     {s:"H3 206",t:"code",n:"Haroun"},
+     {s:"Flash",t:"cs",n:"St. Joseph"},
+     {s:"Delta Sierra",t:"cs",n:"De La Croix"},
+     {s:"H",t:"g",n:"Bitar"},
+   ]},
+   {code:"207", name:"Falougha", h:[
+     {s:"H",t:"g",n:"Jabal"},
+     {s:"H",t:"g",n:"Himlin"},
+   ]},
+   {code:"208", name:"Bolonia", h:[]},
+   {code:"209", name:"Kfar Debian", h:[]},
+ ]},
+
+ {num:"300s", name:"Bekaa", tag:"البقاع", branches:[
+   {code:"301", name:"Zahleh", h:[
+     {s:"H",t:"g",n:"Libano-Français"},
+     {s:"H",t:"g",n:"Khoury"},
+     {s:"H",t:"g",n:"Tell Shiha"},
+     {s:"H",t:"g",n:"Khatib"},
+     {s:"H",t:"g",n:"Maalaka",note:"Gov."},
+     {s:"H",t:"g",n:"Abdallah / Rayak (RIAK)"},
+     {s:"H",t:"g",n:"Temnine"},
+     {s:"H",t:"g",n:"Hrawi",note:"Gov."},
+   ]},
+   {code:"302", name:"Kob Elias", h:[
+     {s:"H",t:"g",n:"Mayss"},
+     {s:"H",t:"g",n:"Taanayel",note:"Rahmeh"},
+     {s:"H",t:"g",n:"Bekaa"},
+     {s:"H",t:"g",n:"Chtoura"},
+     {s:"H",t:"g",n:"Palestinian Red Crescent"},
+   ]},
+   {code:"303", name:"Baalbeck", h:[
+     {s:"H",t:"g",n:"Ibn Sina"},
+     {s:"H",t:"g",n:"Baalbeck",note:"Gov."},
+     {s:"H",t:"g",n:"Tatary"},
+     {s:"H",t:"g",n:"Al Mortada"},
+     {s:"H",t:"g",n:"Ablah",note:"Military"},
+     {s:"H",t:"g",n:"Rayan"},
+     {s:"H",t:"g",n:"Dar el Hekma"},
+     {s:"H",t:"g",n:"Dar Al Amal",note:"University"},
+   ]},
+   {code:"304", name:"Jeb Jenine", h:[
+     {s:"H",t:"g",n:"Farhat"},
+     {s:"H",t:"g",n:"Kherbet Kanafar",note:"Gov."},
+   ]},
+   {code:"305", name:"Hermel", h:[
+     {s:"H",t:"g",n:"El Assy"},
+     {s:"H",t:"g",n:"Hermel",note:"Gov."},
+     {s:"H",t:"g",n:"Batoul"},
+     {s:"H",t:"g",n:"Universal"},
+   ]},
+   {code:"306", name:"Rachaya", h:[
+     {s:"H",t:"g",n:"Tayba / Manara"},
+     {s:"H",t:"g",n:"Bahmad"},
+     {s:"H",t:"g",n:"Rachaya",note:"Gov."},
+   ]},
+   {code:"307", name:"Mashgara", h:[]},
+ ]},
+
+ {num:"400s", name:"South I — Saida & Nabatieh", tag:"الجنوب", branches:[
+   {code:"401", name:"Saida", h:[
+     {s:"H",t:"g",n:"Hammoud"},
+     {s:"H",t:"g",n:"Labib"},
+     {s:"H",t:"g",n:"Dalaa"},
+     {s:"H",t:"g",n:"Chaaib"},
+     {s:"H",t:"g",n:"Al Raay"},
+     {s:"H",t:"g",n:"Eliya"},
+     {s:"H",t:"g",n:"Jbaily"},
+     {s:"H",t:"g",n:"Iskandar al Hajj"},
+     {s:"H",t:"g",n:"Nakib"},
+     {s:"H",t:"g",n:"Hamshary"},
+     {s:"H",t:"g",n:"Kassab"},
+     {s:"H",t:"g",n:"Bashir Sham",note:"South Health Complex"},
+     {s:"H",t:"g",n:"Al Quds"},
+     {s:"H",t:"g",n:"Saida",note:"Gov."},
+     {s:"H",t:"g",n:"Osseiran"},
+     {s:"H",t:"g",n:"Hajj",note:"Jiyeh"},
+   ]},
+   {code:"402", name:"Jezzine", h:[
+     {s:"H",t:"g",n:"Jezzine",note:"Gov."},
+   ]},
+   {code:"403", name:"Jinsnaya", h:[]},
+   {code:"404", name:"Nsarieh", h:[
+     {s:"H",t:"g",n:"Alaa Eddine"},
+     {s:"H",t:"g",n:"Kharoubi"},
+   ]},
+   {code:"405", name:"Nabatieh", h:[
+     {s:"H",t:"g",n:"Nabatieh",note:"Gov."},
+     {s:"H",t:"g",n:"Al Janoub"},
+     {s:"H",t:"g",n:"Ghandour"},
+     {s:"H",t:"g",n:"Fanar"},
+     {s:"H",t:"g",n:"Al Najdeh Al Chaabieh"},
+     {s:"H",t:"g",n:"Ragheb Harb"},
+   ]},
+ ]},
+
+ {num:"500s", name:"North", tag:"الشمال", branches:[
+   {code:"501", name:"Tripoli", h:[
+     {s:"India",t:"cs",n:"Islamique Al Khayri"},
+     {s:"H",t:"g",n:"Islamique Al Khass"},
+     {s:"H",t:"g",n:"Nini"},
+     {s:"H",t:"g",n:"Mazloum"},
+     {s:"H",t:"g",n:"Mounla"},
+     {s:"H",t:"g",n:"Haykal"},
+     {s:"H",t:"g",n:"Al Salam"},
+     {s:"H",t:"g",n:"Housayni"},
+     {s:"H",t:"g",n:"Al Oumahat"},
+     {s:"H",t:"g",n:"Dar Al Tawlid"},
+     {s:"H",t:"g",n:"Chahine"},
+     {s:"H",t:"g",n:"Al Bissar"},
+     {s:"H",t:"g",n:"Centre Al Zahraa"},
+     {s:"H",t:"g",n:"Dar Al Shifaa"},
+     {s:"H",t:"g",n:"Tripoli",note:"Gov."},
+     {s:"H",t:"g",n:"Hanan Al Khayri"},
+     {s:"H",t:"g",n:"Dounnieh",note:"Gov."},
+     {s:"H",t:"g",n:"Nasso",note:"Gov."},
+     {s:"H",t:"g",n:"Safad / Baddawi"},
+   ]},
+   {code:"502", name:"Batroun", h:[
+     {s:"H",t:"g",n:"Batroun",note:"Gov."},
+     {s:"H",t:"g",n:"Tanourine",note:"Gov."},
+   ]},
+   {code:"503", name:"Amyoun", h:[
+     {s:"H",t:"g",n:"Koura",note:"Gov."},
+     {s:"H",t:"g",n:"Bourji"},
+   ]},
+   {code:"504", name:"Bcharre", h:[
+     {s:"Lilia",t:"cs",n:"Bcharre",note:"Gov."},
+   ]},
+   {code:"505", name:"Zghorta", h:[
+     {s:"H",t:"g",n:"CHN"},
+     {s:"H",t:"g",n:"Notre Dame de Zgharta"},
+     {s:"H",t:"g",n:"Al Rehbane (Monks)"},
+     {s:"H",t:"g",n:"Ehden",note:"Gov."},
+   ]},
+   {code:"506", name:"Halba", h:[
+     {s:"H1 506",t:"code",n:"Rahal"},
+     {s:"H3 506",t:"code",n:"Maan Youssef"},
+     {s:"H",t:"g",n:"Khayr"},
+     {s:"H",t:"g",n:"Halba",note:"Gov."},
+   ]},
+   {code:"507", name:"Koubayet", h:[
+     {s:"H1 507",t:"code",n:"Notre Dame Al Salam"},
+   ]},
+   {code:"508", name:"Hrar", h:[]},
+ ]},
+
+ {num:"600s", name:"Mount Lebanon — South", tag:"دائرة جبل لبنان الجنوبي", branches:[
+   {code:"601", name:"Baabda", h:[
+     {s:"Golf",t:"cs",n:"St. Charles"},
+     {s:"Lima",t:"cs",n:"Sacré Cœur"},
+     {s:"California",t:"cs",n:"Baabda",note:"Gov."},
+     {s:"Whisky",t:"cs",n:"St. Thérèse"},
+     {s:"Wayno",t:"cs",n:"St. Georges"},
+   ]},
+   {code:"602", name:"Aley", h:[
+     {s:"India",t:"cs",n:"Iman"},
+     {s:"H",t:"g",n:"Watany"},
+     {s:"H",t:"g",n:"Aazounieh"},
+   ]},
+   {code:"603", name:"Semkanieh", h:[
+     {s:"Alpha Zolo",t:"cs",n:"Ain Wa Zain"},
+     {s:"B.M.C",t:"cs",n:"Baakline"},
+     {s:"H",t:"g",n:"Aarfan"},
+   ]},
+   {code:"604", name:"Kabr Chmoun", h:[
+     {s:"H 604",t:"code",n:"Shehar"},
+     {s:"H2 604",t:"code",n:"Bchamoun Specialist Hospital"},
+   ]},
+   {code:"605", name:"Deir Al Kamar", h:[]},
+   {code:"606", name:"Damour", h:[
+     {s:"H1 606",t:"code",n:"Sibline",note:"Gov."},
+     {s:"H2 606",t:"code",n:"Markazi Mazboud"},
+     {s:"H3 606",t:"code",n:"Outhman"},
+   ]},
+   {code:"607", name:"Choueifat", h:[
+     {s:"H607",t:"code",n:"Joumblatt"},
+   ]},
+ ]},
+
+ {num:"700s", name:"South II — Tyre, Bint Jbeil & Marjeyoun", tag:"الجنوب", branches:[
+   {code:"701", name:"Hasbaya", h:[
+     {s:"H",t:"g",n:"Hasbaya",note:"Gov."},
+   ]},
+   {code:"702", name:"Tyr", h:[
+     {s:"H",t:"g",n:"Jabal Aamel"},
+     {s:"H",t:"g",n:"Balsam",note:"Rachidieh"},
+     {s:"H",t:"g",n:"Libano-Italien"},
+     {s:"H",t:"g",n:"Tyr",note:"Gov."},
+     {s:"H",t:"g",n:"Hiram"},
+   ]},
+   {code:"703", name:"Tebnine", h:[
+     {s:"H",t:"g",n:"Tebnine",note:"Gov."},
+   ]},
+   {code:"704", name:"Marjeyoun", h:[
+     {s:"H",t:"g",n:"Marjeyoun",note:"Gov."},
+   ]},
+   {code:"705", name:"Rmeich / Bint Jbeil", h:[
+     {s:"H",t:"g",n:"Mays al Jabal",note:"Gov."},
+     {s:"H",t:"g",n:"Bint Jbeil",note:"Gov."},
+     {s:"H",t:"g",n:"Salah Ghandour",note:"Bint Jbeil"},
+   ]},
+   {code:"706", name:"Shebaa", h:[]},
+ ]},
+];
+
+/* ---- render main reference ---- */
+const main = document.getElementById('main');
+data.forEach(reg=>{
+  const sec = document.createElement('section');
+  sec.className='region';
+  sec.innerHTML = `<div class="region-head">
+      <div class="region-num">${reg.num}</div>
+      <div><div class="region-tag">${reg.tag}</div><div class="region-name">${reg.name}</div></div>
+    </div>`;
+  const grid = document.createElement('div');
+  grid.className='branches';
+  reg.branches.forEach(b=>{
+    const card = document.createElement('div');
+    card.className='branch';
+    let rows = b.h.length
+      ? b.h.map(x=>`<div class="hosp">
+            <span class="sign ${x.t}">${x.s}</span>
+            <span class="hname">${x.n}${x.note?` <span class="note">(${x.note})</span>`:''}</span>
+          </div>`).join('')
+      : `<div class="empty">— no hospital listed —</div>`;
+    card.innerHTML = `<div class="branch-head">
+        <span class="branch-code">${b.code}</span>
+        <span class="branch-name">${b.name}</span>
+      </div><div class="branch-body">${rows}</div>`;
+    grid.appendChild(card);
+  });
+  sec.appendChild(grid);
+  main.appendChild(sec);
+});
+
+/* ---- render cheat sheet (call-signs only) ---- */
+const cg = document.getElementById('cheatGrid');
+data.forEach(reg=>{
+  const cs = [];
+  reg.branches.forEach(b=> b.h.forEach(x=>{ if(x.t==='cs') cs.push(x); }));
+  if(!cs.length) return;
+  const head = document.createElement('div');
+  head.className='cheat-reg';
+  head.textContent = reg.name;
+  cg.appendChild(head);
+  cs.forEach(x=>{
+    const r = document.createElement('div');
+    r.className='cheat-row';
+    r.innerHTML = `<span class="cs">${x.s}</span><span class="nm">${x.n}</span>`;
+    cg.appendChild(r);
+  });
+});
+
+/* ---- mode toggles ---- */
+const bStudy=document.getElementById('modeStudy'),
+      bQuiz=document.getElementById('modeQuiz'),
+      bReveal=document.getElementById('revealAll');
+function setMode(quiz){
+  document.body.classList.toggle('quiz',quiz);
+  bQuiz.classList.toggle('on',quiz);
+  bStudy.classList.toggle('on',!quiz);
+  bReveal.style.display = quiz?'inline-block':'none';
+  if(!quiz) document.querySelectorAll('.reveal').forEach(e=>e.classList.remove('reveal'));
+}
+bStudy.onclick=()=>setMode(false);
+bQuiz.onclick=()=>setMode(true);
+bReveal.onclick=()=>document.querySelectorAll('body.quiz .hname,body.quiz .cheat .nm').forEach(e=>e.classList.add('reveal'));
+document.addEventListener('click',e=>{
+  if(!document.body.classList.contains('quiz')) return;
+  const t=e.target.closest('.hname,.cheat .nm');
+  if(t) t.classList.toggle('reveal');
+});
+
+/* ================= Shared helpers ================= */
+const el = id => document.getElementById(id);
+
+/* ================= Hospital quiz ================= */
+// Collect hospitals from 100s, 200s, 600s
+const hospPool = [];
+data.forEach(r=>{
+  if(!['100s','200s','600s'].includes(r.num)) return;
+  r.branches.forEach(b=>{
+    b.h.forEach(x=>{
+      hospPool.push({
+        sign: x.s,           // call-sign (or 'H')
+        name: x.n + (x.note ? ` (${x.note})` : ''),
+        namePlain: x.n,      // for display without note
+        note: x.note||'',
+        type: x.t,
+        branchCode: b.code,
+        branchName: b.name
+      });
+    });
+  });
+});
+
+// Accent-aware normalizer
+const hnorm = s => s.toLowerCase()
+  .replace(/œ/g,'oe').replace(/æ/g,'ae')
+  .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  .replace(/[^a-z0-9]/g,'');
+
+// Accept answer: check exact norm match, or match any slash-separated segment
+const hospMatch = (input, answer) => {
+  const ni = hnorm(input);
+  const parts = answer.split('/').map(p=>hnorm(p)).filter(Boolean);
+  parts.push(hnorm(answer));
+  return parts.some(p=>p===ni);
+};
+
+let hqMode='mixed', hCur=null, hCurDir=null;
+let hOk=0, hNo=0, hStreak=0;
+let hBag=[];
+
+function refillHBag(){
+  hBag = hospPool.slice();
+  for(let i=hBag.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [hBag[i],hBag[j]]=[hBag[j],hBag[i]];
+  }
+}
+
+const hqAsk=el('hqAsk'), hqPrompt=el('hqPrompt'), hqBranch=el('hqBranch'),
+      hqInput=el('hqInput'), hqFeed=el('hqFeed'),
+      hsOk=el('hsOk'), hsNo=el('hsNo'), hsStreak=el('hsStreak');
+
+function nextHQ(){
+  if(hBag.length===0) refillHBag();
+
+  // Keep popping until we find a valid entry for the current mode
+  let hosp=null, dir=null, attempts=0;
+  while(!dir && attempts < hBag.length+1){
+    if(hBag.length===0) refillHBag();
+    const candidate = hBag.pop();
+    attempts++;
+    if(hqMode==='n2s'){
+      hosp=candidate; dir='n2s';
+    } else if(hqMode==='s2n'){
+      // skip generic H entries in s2n mode (ambiguous)
+      if(candidate.type!=='g'){ hosp=candidate; dir='s2n'; }
+      else hBag.unshift(candidate); // put back at front for later
+    } else {
+      // mixed: H entries always get n2s; others random
+      hosp=candidate;
+      dir = (candidate.type==='g') ? 'n2s' : (Math.random()<0.5?'n2s':'s2n');
+    }
+  }
+  if(!hosp){ hqFeed.className='qfeed ok'; hqFeed.textContent='No valid questions for this mode. Try Mixed or Name→Code.'; return; }
+
+  hCur=hosp; hCurDir=dir;
+  hqBranch.textContent=`${hosp.branchCode} · ${hosp.branchName}`;
+  hqFeed.textContent=''; hqFeed.className='qfeed';
+  hqInput.value=''; hqInput.focus();
+
+  if(dir==='n2s'){
+    hqAsk.textContent='What is the call-sign / code for this hospital?';
+    hqPrompt.innerHTML=`<span class="big-name">${hosp.namePlain}${hosp.note?` <span style="font-size:.55em;color:var(--muted)">(${hosp.note})</span>`:''}</span>`;
+    hqInput.placeholder='Call-sign or H…';
+  } else {
+    hqAsk.textContent='Which hospital has this call-sign?';
+    hqPrompt.innerHTML=`<span class="big-num">${hosp.sign}</span>`;
+    hqInput.placeholder='Hospital name…';
+  }
+}
+
+function checkH(){
+  if(!hCur) return;
+  const val = hqInput.value.trim();
+  if(!val){ hqInput.focus(); return; }
+  let correct;
+  if(hCurDir==='n2s'){
+    correct = hnorm(val) === hnorm(hCur.sign);
+  } else {
+    correct = hospMatch(val, hCur.namePlain);
+  }
+  if(correct){
+    hOk++; hStreak++;
+    hqFeed.className='qfeed ok';
+    hqFeed.innerHTML=`✓ Correct — <span class="ans">${hCur.sign} · ${hCur.namePlain}</span>`;
+  } else {
+    hNo++; hStreak=0;
+    hqFeed.className='qfeed no';
+    hqFeed.innerHTML=`✗ Not quite — answer: <span class="ans">${hCur.sign} · ${hCur.namePlain}</span>`;
+    // put the wrong question back at a random non-immediate position
+    const ri = hBag.length > 1 ? 1 + Math.floor(Math.random() * (hBag.length - 1)) : 0;
+    hBag.splice(ri, 0, hCur);
+  }
+  hsOk.textContent=hOk; hsNo.textContent=hNo; hsStreak.textContent=hStreak;
+  hCur=null;
+  setTimeout(nextHQ, correct?700:1800);
+}
+
+el('hqCheck').onclick=checkH;
+el('hqSkip').onclick=()=>{ hStreak=0; hsStreak.textContent=0; hCur=null; nextHQ(); };
+hqInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){ hCur?checkH():nextHQ(); } });
+
+document.querySelectorAll('#hqModes .btn').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('#hqModes .btn').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    hqMode=b.dataset.hmode;
+    hBag=[]; // reset bag on mode switch
+    hCur=null;
+    nextHQ();
+  };
+});
+
+nextHQ();
+
+/* ================= Branch quiz ================= */
+const allBranches=[];
+data.forEach(r=>r.branches.forEach(b=>allBranches.push({code:b.code,name:b.name})));
+
+const norm=s=>s.toLowerCase().replace(/[^a-z0-9]/g,'');
+const nameVariants=name=>{
+  // accept full name or any "/"-separated segment
+  const parts=name.split('/').map(p=>norm(p)).filter(Boolean);
+  parts.push(norm(name));
+  return [...new Set(parts)];
+};
+
+let qMode='mixed', cur=null, curDir=null;
+let ok=0,no=0,streak=0;
+let bag=[];
+
+function refillBag(){
+  bag=allBranches.slice();
+  // Fisher–Yates shuffle
+  for(let i=bag.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [bag[i],bag[j]]=[bag[j],bag[i]];
+  }
+}
+
+const qAsk=el('qAsk'),qPrompt=el('qPrompt'),qInput=el('qInput'),
+      qFeed=el('qFeed'),sOk=el('sOk'),sNo=el('sNo'),sStreak=el('sStreak');
+
+function nextQ(){
+  if(bag.length===0) refillBag();
+  cur=bag.pop();
+  curDir = qMode==='mixed' ? (Math.random()<0.5?'num2name':'name2num') : qMode;
+  if(curDir==='num2name'){
+    qAsk.textContent='What branch is this number?';
+    qPrompt.innerHTML=`<span class="big-num">${cur.code}</span>`;
+    qInput.placeholder='Branch name…';
+  }else{
+    qAsk.textContent='What number is this branch?';
+    qPrompt.innerHTML=`<span class="big-name">${cur.name}</span>`;
+    qInput.placeholder='Branch number…';
+  }
+  qFeed.textContent='';qFeed.className='qfeed';
+  qInput.value='';qInput.focus();
+}
+
+function check(){
+  if(!cur) return;
+  const val=qInput.value.trim();
+  if(!val){qInput.focus();return;}
+  let correct;
+  if(curDir==='num2name'){
+    correct = nameVariants(cur.name).includes(norm(val));
+  }else{
+    correct = norm(val).replace(/^0+/,'') === norm(cur.code).replace(/^0+/,'');
+  }
+  if(correct){
+    ok++;streak++;
+    qFeed.className='qfeed ok';
+    qFeed.innerHTML=`✓ Correct — <span class="ans">${cur.code} · ${cur.name}</span>`;
+  }else{
+    no++;streak=0;
+    qFeed.className='qfeed no';
+    qFeed.innerHTML=`✗ Not quite — answer: <span class="ans">${cur.code} · ${cur.name}</span>`;
+    // put the wrong question back at a random non-immediate position
+    const ri = bag.length > 1 ? 1 + Math.floor(Math.random() * (bag.length - 1)) : 0;
+    bag.splice(ri, 0, cur);
+  }
+  sOk.textContent=ok;sNo.textContent=no;sStreak.textContent=streak;
+  cur=null;
+  setTimeout(nextQ,correct?700:1600);
+}
+
+el('qCheck').onclick=check;
+el('qSkip').onclick=()=>{streak=0;sStreak.textContent=0;nextQ();};
+qInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){ cur?check():nextQ(); } });
+
+document.querySelectorAll('#branchQModes .btn').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('#branchQModes .btn').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    qMode=b.dataset.mode;
+    nextQ();
+  };
+});
+
+nextQ();
+</script>
+</body>
+</html>
